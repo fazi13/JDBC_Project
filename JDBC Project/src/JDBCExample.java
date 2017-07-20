@@ -7,7 +7,7 @@ public class JDBCExample {
 	public static void main(String[] args) {
 		Connection conn;
 		Statement stmt;
-		Scanner sc = new Scanner(System.in);
+		Scanner scan = new Scanner(System.in);
 		String input = "";
 		//connect to the db
 		try {
@@ -23,7 +23,7 @@ public class JDBCExample {
 	         displayAllCommands();
 	         while(true){
 	        	 System.out.print("Command: ");
-	        	 input = sc.nextLine();
+	        	 input = scan.nextLine();
 	        	 if(input.trim().charAt(0) == 's')
 	        		 displaySchedule(stmt);
 	        	 else if(input.trim().equals("dt"))
@@ -36,6 +36,8 @@ public class JDBCExample {
 	        		 changeDriver(stmt);
 	        	 else if(input.trim().equals("cb"))
 	        		 changeBus(stmt);
+	        	 else if(input.trim().equals("ds"))
+	        		 displayTripStops(stmt);
 	        	 else
 	        		 displayAllCommands();
 	         }
@@ -44,7 +46,7 @@ public class JDBCExample {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
-		sc.close();
+		scan.close();
 	}
 	
 	private static void displayAllCommands(){
@@ -52,7 +54,8 @@ public class JDBCExample {
         System.out.println("dt: Delete a Trip Offering");
         System.out.println("a: Add a Trip Offering");
         System.out.println("cd: Change Driver given Trip Offering");
-        System.out.println("cb: Change Driver given Trip Offering");
+        System.out.println("cb: Change Bus given Trip Offering");
+        System.out.println("ds: Display Trip Stops");
         System.out.println("h: Display all commands");
         System.out.println("x: Exit program");
         //System.out.print("Command: ");
@@ -92,10 +95,10 @@ public class JDBCExample {
 				System.out.println();
 			}
 			rs.close();
+			System.out.println("------------------------------------------------------");
 		}catch (SQLServerException e){
 			System.out.println("No schedule from " + startLoc + " to " + destLoc + " on " + date);
 		}
-		sc.close();
 	}
 	
 	//Delete a trip offering specified by Trip#, Date, and ScheduledStartTime
@@ -122,7 +125,6 @@ public class JDBCExample {
 			//if some error occurs check input
 			System.out.println("No Trip Offering with Trip Number: " + tripNo + " on "+ date + " starting at "+ startTime);
 		}
-		sc.close();
 	}
 	
 	//Add a set of trip offerings assuming the values of all attributes are given 
@@ -158,7 +160,6 @@ public class JDBCExample {
 				break;
 			}
 		}
-		sc.close();
 	}
 	
 	//- Change the driver for a given Trip offering 
@@ -187,7 +188,6 @@ public class JDBCExample {
 			//e.printStackTrace();
 			System.out.println("No such Trip Offering or Driver in database");
 		}
-		sc.close();
 	}
 	
 	//Change the bus for a given Trip offering
@@ -216,6 +216,38 @@ public class JDBCExample {
 			//e.printStackTrace();
 			System.out.println("No such Trip Offering or Bus Number in database");
 		}
-		sc.close();
+	}
+	
+	public static void displayTripStops(Statement stmt) throws SQLException{
+		Scanner sc = new Scanner(System.in);
+		System.out.print("Trip Number: ");
+		String tripNo = sc.nextLine().trim();
+		
+		//get table data
+		try{
+			ResultSet rs = stmt.executeQuery("SELECT * " +
+										"FROM TripStopInfo " +
+										"WHERE TripNumber = '" + tripNo + "' " +
+										"Order By SequenceNumber ");
+			
+			//get column names to print
+			ResultSetMetaData rsmd = rs.getMetaData();
+			int colCount = rsmd.getColumnCount();
+			for(int i = 1; i <= colCount; i++){
+				System.out.print(rsmd.getColumnName(i) + "\t");
+			}
+			System.out.println();
+			
+			//print out rows
+			while(rs.next()){
+				for(int i = 1; i <= colCount; i++)
+					System.out.print(rs.getString(i) + "\t\t");
+				System.out.println();
+			}
+			rs.close();
+			System.out.println("------------------------------------------------------");
+		}catch (SQLServerException e){
+			System.out.println("Trip Number: '" + tripNo + "' does not exist");
+		}
 	}
 }
