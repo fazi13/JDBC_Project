@@ -5,7 +5,6 @@ import com.microsoft.sqlserver.jdbc.SQLServerException;
 
 public class JDBCExample {
 	public static void main(String[] args) {
-		ResultSet rs;
 		Connection conn;
 		Statement stmt;
 		Scanner sc = new Scanner(System.in);
@@ -29,6 +28,8 @@ public class JDBCExample {
 	        		 displaySchedule(stmt);
 	        	 else if(input.trim().equals("dt"))
 	        		 deleteTripOffering(stmt);
+	        	 else if(input.trim().equals("a"))
+	        		 addTripOffering(stmt);
 	        	 else if(input.trim().charAt(0) == 'x')
 	        		 System.exit(0);
 	        	 else if(input.trim().equals("cd"))
@@ -43,11 +44,13 @@ public class JDBCExample {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
+		sc.close();
 	}
 	
 	private static void displayAllCommands(){
 		System.out.println("s: Display Schedule given Start Location, Destination, and Date");
         System.out.println("dt: Delete a Trip Offering");
+        System.out.println("a: Add a Trip Offering");
         System.out.println("cd: Change Driver given Trip Offering");
         System.out.println("cb: Change Driver given Trip Offering");
         System.out.println("h: Display all commands");
@@ -55,18 +58,9 @@ public class JDBCExample {
         //System.out.print("Command: ");
 	}
 	
-	public static void addTripOffering(Statement stmt) throws SQLException{
-		Scanner sc = new Scanner(System.in);
-		String input;
-		System.out.print("Enter Trip Number, Date, Scheduled Start Time, Scheduled Arrival Time, Driver Name, Bus ID: ");
-		input = sc.nextLine();
-		String[] info = input.split(", ");
-		stmt.execute("INSERT INTO TripOffering VALUES " + "(info[0], info[1], info[2], info[3], info[4], info[5])");
-	}
-	
+	//Display the schedule of all trips for a given StartLocationName and Destination Name, and Date
 	public static void displaySchedule(Statement stmt) throws SQLException{
 		Scanner sc = new Scanner(System.in);
-		String input;
 		System.out.print("Start Location Name: ");
 		String startLoc = sc.nextLine().trim();
 		System.out.print("Destination Name: ");
@@ -74,6 +68,7 @@ public class JDBCExample {
 		System.out.print("Date: ");
 		String date = sc.nextLine().trim();
 		
+		//get table data
 		try{
 			ResultSet rs = stmt.executeQuery("SELECT T0.ScheduledStartTime, T0.ScheduledArrivalTime, T0.DriverName, T0.BusID " +
 										"FROM TripOffering T0, Trip T1 " +
@@ -100,11 +95,12 @@ public class JDBCExample {
 		}catch (SQLServerException e){
 			System.out.println("No schedule from " + startLoc + " to " + destLoc + " on " + date);
 		}
+		sc.close();
 	}
 	
+	//Delete a trip offering specified by Trip#, Date, and ScheduledStartTime
 	public static void deleteTripOffering(Statement stmt) throws SQLException{
 		Scanner sc = new Scanner(System.in);
-		String input;
 		System.out.print("Start Trip Number: ");
 		String tripNo = sc.nextLine().trim();
 		System.out.print("Date: ");
@@ -126,11 +122,48 @@ public class JDBCExample {
 			//if some error occurs check input
 			System.out.println("No Trip Offering with Trip Number: " + tripNo + " on "+ date + " starting at "+ startTime);
 		}
+		sc.close();
 	}
 	
+	//Add a set of trip offerings assuming the values of all attributes are given 
+	public static void addTripOffering(Statement stmt) throws SQLException{
+		Scanner sc = new Scanner(System.in);
+		while(true){
+			System.out.print("Enter Trip Number: ");
+			String tripNo = sc.nextLine().trim();
+			System.out.print("Date: ");
+			String date = sc.nextLine().trim();
+			System.out.print("Scheduled Start Time: ");
+			String startTime = sc.nextLine().trim();
+			System.out.print("Scheduled Arrival Time: ");
+			String arrivalTime = sc.nextLine().trim();
+			System.out.print("Driver Name: ");
+			String driver = sc.nextLine().trim();
+			System.out.print("Bus ID: ");
+			String bus = sc.nextLine().trim();
+
+			//insert into trip offering
+			try{
+				stmt.execute("INSERT INTO TripOffering VALUES ('" + tripNo + "', '" + date + "', '" + startTime + "', '" + arrivalTime + "', '" + driver + "', '" + bus + "')");
+				System.out.print("Successfully added a new Trip Offering");
+			}catch (SQLServerException e){
+				System.out.println("Check input formatting");
+			}
+			//loops and asks user to add another
+			System.out.print("Add another Trip Offering? (y/n): ");
+			String input = sc.nextLine();
+			if(input.trim().charAt(0) == 'y'){
+				//do nothing
+			}else{
+				break;
+			}
+		}
+		sc.close();
+	}
+	
+	//- Change the driver for a given Trip offering 
 	public static void changeDriver(Statement stmt) throws SQLException{
 		Scanner sc = new Scanner(System.in);
-		String input;
 		System.out.print("New Driver Name: ");
 		String driver = sc.nextLine().trim();
 		System.out.print("Start Trip Number: ");
@@ -154,11 +187,12 @@ public class JDBCExample {
 			//e.printStackTrace();
 			System.out.println("No such Trip Offering or Driver in database");
 		}
+		sc.close();
 	}
 	
+	//Change the bus for a given Trip offering
 	public static void changeBus(Statement stmt) throws SQLException{
 		Scanner sc = new Scanner(System.in);
-		String input;
 		System.out.print("New Bus Number: ");
 		String bus = sc.nextLine().trim();
 		System.out.print("Start Trip Number: ");
@@ -182,5 +216,6 @@ public class JDBCExample {
 			//e.printStackTrace();
 			System.out.println("No such Trip Offering or Bus Number in database");
 		}
+		sc.close();
 	}
 }
