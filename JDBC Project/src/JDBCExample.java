@@ -1,10 +1,16 @@
+/*Dylan Nguyen
+CS 435 
+Lab 4
+*/
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 
 public class JDBCExample {
-	public static void main(String[] args) {
+	public static void main(String[] args) throws ParseException {
 		Connection conn;
 		Statement stmt;
 		Scanner scan = new Scanner(System.in);
@@ -44,6 +50,10 @@ public class JDBCExample {
 	        		 addBus(stmt);
 	        	 else if(input.trim().equals("db"))
 	        		 deleteBus(stmt);
+	        	 else if(input.trim().equals("dw"))
+	        		 displayWeekly(stmt);
+	        	 else if(input.trim().equals("it"))
+	        		 insertTripData(stmt);
 	        	 else
 	        		 displayAllCommands();
 	         }
@@ -62,9 +72,11 @@ public class JDBCExample {
         System.out.println("cd:\tChange a Driver");
         System.out.println("cb:\tChange a Bus");
         System.out.println("ds:\tDisplay Trip Stops");
+        System.out.println("dw:\tDisplay Weekly Schedule for Driver");
         System.out.println("ad:\tAdd a Driver");
         System.out.println("ab:\tAdd a Bus");
         System.out.println("db:\tDelete a Bus");
+        System.out.println("it:\tInsert Actual Trip Info");
         System.out.println("h:\tDisplay all commands");
         System.out.println("x:\tExit program");
         //System.out.print("Command: ");
@@ -87,7 +99,8 @@ public class JDBCExample {
 										"WHERE T1.StartLocationName LIKE '" + startLoc + "' AND " +
 										"T1.DestinationName LIKE '" + destLoc + "' AND " +
 										"T0.Date = '" + date + "' AND " +
-										"T1.TripNumber = T0.TripNumber;");
+										"T1.TripNumber = T0.TripNumber " + 
+										"Order by ScheduledStartTime ");
 			
 			//get column names to print
 			ResultSetMetaData rsmd = rs.getMetaData();
@@ -260,6 +273,64 @@ public class JDBCExample {
 		}
 	}
 	
+	public static void displayWeekly(Statement stmt) throws ParseException, SQLException{
+		Scanner sc = new Scanner(System.in);
+		System.out.print("Driver name: ");
+		String driver = sc.nextLine().trim();
+		System.out.print("Date: ");
+		String dateStr = sc.nextLine().trim();
+		
+		//convert date string to calendar object so it can be incremented for the week
+		SimpleDateFormat df = new SimpleDateFormat("MM/dd/yy");
+		Calendar date = new GregorianCalendar();
+		date.setTime(df.parse(dateStr));
+		
+		for(int i = 0; i < 7; i++){
+			//convert back to a string
+			dateStr = df.format(date.getTime());
+			
+			//query for selected driver and date
+			try{
+				ResultSet rs = stmt.executeQuery("SELECT TripNumber, Date, ScheduledStartTime, ScheduledArrivalTime, BusID " +
+											"FROM TripOffering " +
+											"WHERE DriverName LIKE '" + driver + "' " +
+											"AND Date = '" + dateStr + "' " +
+											"Order By ScheduledStartTime ");
+				ResultSetMetaData rsmd = rs.getMetaData();
+				int colCount = rsmd.getColumnCount();
+				//if first then print out the column names
+				if(i == 0){
+					System.out.println("----------------------Day 1----------------------------");
+					//get column names to print
+					for(int j = 1; j <= colCount; j++){
+						if(j == 1 || j == 3)
+							System.out.print(rsmd.getColumnName(j) + "\t");
+						else
+							System.out.print(rsmd.getColumnName(j) + "\t\t");
+					}
+					System.out.println();
+				}
+				
+				//print out rows
+				while(rs.next()){
+					for(int j = 1; j <= colCount; j++)
+						System.out.print(rs.getString(j) + "\t\t");
+					System.out.println();
+				}
+				rs.close();
+			}catch(SQLServerException e){
+				System.out.println("Check input formatting");
+			}
+			
+			//increment date by 1 at the end
+			date.add(Calendar.DATE, 1);
+			//add separator for each day of the week
+			if(i < 6)
+				System.out.println("----------------------Day " + (i+2) + "----------------------------");
+		}
+		System.out.println("------------------------------------------------------");
+	}
+	
 	public static void addDriver(Statement stmt) throws SQLException{
 		Scanner sc = new Scanner(System.in);
 		System.out.print("Driver name: ");
@@ -310,5 +381,36 @@ public class JDBCExample {
 		}catch(SQLServerException e){
 			System.out.println("No Bus ID = " + bus);
 		}
+	}
+	
+	public static void insertTripData(Statement stmt) throws SQLException{
+		Scanner sc = new Scanner(System.in);
+		System.out.print("Trip Number: ");
+		String tripNo = sc.nextLine().trim();
+		System.out.print("Date: ");
+		String date = sc.nextLine().trim();
+		System.out.print("Scheduled Start Time: ");
+		String startTime = sc.nextLine().trim();
+		System.out.print("Stop Number: ");
+		String stop = sc.nextLine().trim();
+		System.out.print("Scheduled Arrival Time: ");
+		String arrivalTime = sc.nextLine().trim();
+		System.out.print("Actual Start Time: ");
+		String actualStart = sc.nextLine().trim();
+		System.out.print("Actual Arrival Time: ");
+		String actualArrival = sc.nextLine().trim();
+		System.out.print("Passengers in: ");
+		String passIn = sc.nextLine().trim();
+		System.out.print("Passengers out: ");
+		String passOut = sc.nextLine().trim();
+		
+		try{
+			//add that info into actual trip stop
+			stmt.execute("INSERT INTO ActualTripStopInfo VALUES ('" + tripNo + "', '" + date + "', '" + startTime + "', '" + stop + "', '" + arrivalTime
+					 + "', '" + actualStart + "', '" + actualArrival + "', '" + passIn + "', '" + passOut + "')");
+		}catch(SQLServerException e){
+			System.out.println("Check input formatting");
+		}
+		System.out.println("Successfully recorded data");
 	}
 }
