@@ -24,11 +24,11 @@ public class JDBCExample {
 	         while(true){
 	        	 System.out.print("Command: ");
 	        	 input = scan.nextLine();
-	        	 if(input.trim().charAt(0) == 's')
+	        	 if(input.trim().equals("ds"))
 	        		 displaySchedule(stmt);
 	        	 else if(input.trim().equals("dt"))
 	        		 deleteTripOffering(stmt);
-	        	 else if(input.trim().equals("a"))
+	        	 else if(input.trim().equals("at"))
 	        		 addTripOffering(stmt);
 	        	 else if(input.trim().charAt(0) == 'x')
 	        		 System.exit(0);
@@ -38,6 +38,12 @@ public class JDBCExample {
 	        		 changeBus(stmt);
 	        	 else if(input.trim().equals("ds"))
 	        		 displayTripStops(stmt);
+	        	 else if(input.trim().equals("ad"))
+	        		 addDriver(stmt);
+	        	 else if(input.trim().equals("ab"))
+	        		 addBus(stmt);
+	        	 else if(input.trim().equals("db"))
+	        		 deleteBus(stmt);
 	        	 else
 	        		 displayAllCommands();
 	         }
@@ -50,14 +56,17 @@ public class JDBCExample {
 	}
 	
 	private static void displayAllCommands(){
-		System.out.println("s: Display Schedule given Start Location, Destination, and Date");
-        System.out.println("dt: Delete a Trip Offering");
-        System.out.println("a: Add a Trip Offering");
-        System.out.println("cd: Change Driver given Trip Offering");
-        System.out.println("cb: Change Bus given Trip Offering");
-        System.out.println("ds: Display Trip Stops");
-        System.out.println("h: Display all commands");
-        System.out.println("x: Exit program");
+		System.out.println("ds:\tDisplay a Schedule");
+        System.out.println("dt:\tDelete a Trip Offering");
+        System.out.println("at:\tAdd a Trip Offering");
+        System.out.println("cd:\tChange a Driver");
+        System.out.println("cb:\tChange a Bus");
+        System.out.println("ds:\tDisplay Trip Stops");
+        System.out.println("ad:\tAdd a Driver");
+        System.out.println("ab:\tAdd a Bus");
+        System.out.println("db:\tDelete a Bus");
+        System.out.println("h:\tDisplay all commands");
+        System.out.println("x:\tExit program");
         //System.out.print("Command: ");
 	}
 	
@@ -248,6 +257,58 @@ public class JDBCExample {
 			System.out.println("------------------------------------------------------");
 		}catch (SQLServerException e){
 			System.out.println("Trip Number: '" + tripNo + "' does not exist");
+		}
+	}
+	
+	public static void addDriver(Statement stmt) throws SQLException{
+		Scanner sc = new Scanner(System.in);
+		System.out.print("Driver name: ");
+		String driver = sc.nextLine().trim();
+		System.out.print("Phone number: ");
+		String phone = sc.nextLine().trim();
+		
+		//insert into driver
+		try{
+			stmt.execute("INSERT INTO Driver VALUES ('" + driver + "', '" + phone + "')");
+			System.out.println("Successfully added a new Driver");
+		}catch (SQLServerException e){
+			System.out.println("Check input formatting");
+		}
+	}
+	
+	public static void addBus(Statement stmt) throws SQLException{
+		Scanner sc = new Scanner(System.in);
+		System.out.print("Bus ID: ");
+		String bus = sc.nextLine().trim();
+		System.out.print("Bus model: ");
+		String model = sc.nextLine().trim();
+		System.out.print("Bus year: ");
+		String year = sc.nextLine().trim();
+		
+		//insert into bus
+		try{
+			stmt.execute("INSERT INTO Bus VALUES ('" + bus + "', '" + model + "', '" + year + "')");
+			System.out.println("Successfully added a new Bus");
+		}catch (SQLServerException e){
+			System.out.println("Check input formatting");
+		}
+	}
+	
+	public static void deleteBus(Statement stmt) throws SQLException{
+		Scanner sc = new Scanner(System.in);
+		System.out.print("Bus ID: ");
+		String bus = sc.nextLine().trim();
+		
+		try{
+			//if delete returns 0 that means no rows found matching that data so output an error
+			if(stmt.executeUpdate("DELETE Bus " + 
+								"WHERE BusID = '" + bus + "'") == 0){
+				System.out.println("No Bus ID = " + bus);
+			}else{
+				System.out.println("Successfully deleted");
+			}
+		}catch(SQLServerException e){
+			System.out.println("No Bus ID = " + bus);
 		}
 	}
 }
